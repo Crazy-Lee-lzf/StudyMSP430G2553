@@ -10,8 +10,16 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
-"./blink.obj" \
-"../lnk_msp430g2253.cmd" \
+"./BCSplus_init.obj" \
+"./CSL_init.obj" \
+"./GPIO_init.obj" \
+"./Grace_init.obj" \
+"./InterruptVectors_init.obj" \
+"./System_init.obj" \
+"./USCI_A0_init.obj" \
+"./WDTplus_init.obj" \
+"./main.obj" \
+"../lnk_msp430g2553.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibc.a \
 
@@ -120,29 +128,29 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-TEST.out 
+test.out 
 
 EXE_OUTPUTS__QUOTED += \
-"TEST.out" 
+"test.out" 
 
 
 # All Target
 all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
-	@$(MAKE) --no-print-directory -Onone "TEST.out"
+	@$(MAKE) --no-print-directory -Onone "test.out"
 
 # Tool invocations
-TEST.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+test.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: MSP430 Linker'
-	"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/bin/cl430" -vmsp -Ooff --use_hw_mpy=none --advice:power="all" --define=__MSP430G2253__ -g --printf_support=minimal --diag_warning=225 --diag_wrap=off --display_error_number -z -m"TEST.map" --heap_size=80 --stack_size=80 -i"D:/ti/ccs1260/ccs/ccs_base/msp430/include" -i"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/lib" -i"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="TEST_linkInfo.xml" --use_hw_mpy=none --rom_model -o "TEST.out" $(ORDERED_OBJS)
+	"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/bin/cl430" -vmsp --use_hw_mpy=none --advice:power=all --define=__MSP430G2553__ -g --printf_support=minimal --diag_warning=225 --diag_wrap=off --display_error_number -z -m"test.map" --heap_size=80 --stack_size=80 -i"D:/ti/ccs1260/ccs/ccs_base/msp430/include" -i"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/lib" -i"D:/ti/ccs1260/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="test_linkInfo.xml" --use_hw_mpy=none --rom_model -o "test.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "blink.obj" 
-	-$(RM) "blink.d" 
+	-$(RM) "BCSplus_init.obj" "CSL_init.obj" "GPIO_init.obj" "Grace_init.obj" "InterruptVectors_init.obj" "System_init.obj" "USCI_A0_init.obj" "WDTplus_init.obj" "main.obj" 
+	-$(RM) "BCSplus_init.d" "CSL_init.d" "GPIO_init.d" "Grace_init.d" "InterruptVectors_init.d" "System_init.d" "USCI_A0_init.d" "WDTplus_init.d" "main.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

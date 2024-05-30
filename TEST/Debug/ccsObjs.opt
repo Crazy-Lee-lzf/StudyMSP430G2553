@@ -1,3 +1,11 @@
-"./blink.obj"
-"../lnk_msp430g2253.cmd"
+"./BCSplus_init.obj"
+"./CSL_init.obj"
+"./GPIO_init.obj"
+"./Grace_init.obj"
+"./InterruptVectors_init.obj"
+"./System_init.obj"
+"./USCI_A0_init.obj"
+"./WDTplus_init.obj"
+"./main.obj"
+"../lnk_msp430g2553.cmd"
 -llibc.a

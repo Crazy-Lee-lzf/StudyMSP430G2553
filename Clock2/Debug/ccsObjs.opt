@@ -1,0 +1,5 @@
+"./Shumaguan.obj"
+"./Timer.obj"
+"./main.obj"
+"../lnk_msp430g2533.cmd"
+-llibc.a

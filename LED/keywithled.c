@@ -8,25 +8,6 @@ void Delay(int time){
     }
 }
 
-int GetKey(void){
-    int key = 0;
-    if((P2IN & 0x01) == 0){
-        Delay(10);
-        if((P2IN & 0x01) == 0){
-            while((P2IN & 0x01) == 0) ;
-            key = 1;
-        }
-    }
-    else if((P2IN & 0x02) == 0){
-        Delay(10);
-        if((P2IN & 0x02) == 0){
-            while((P2IN & 0x02) == 0) ;
-            key = 2;
-        }
-    }
-    return key;
-}
-
 void main(void){
     WDTCTL = WDTPW | WDTHOLD;
     //INPUT
@@ -36,17 +17,22 @@ void main(void){
     P2REN |= 0x03;
     P2OUT |= 0x03;
 
+
     //OUTPUT
     P1DIR = 0xFF;
 
-    int cnt = 0, key = 0, temp = 0, k = 1;
+    int cnt = 0, k = 1;
     while(1){
-        key = GetKey();
-        if(key == 1) k = -1;
-        else if(key == 2) k = 1;
-        temp = 1 << cnt;
-        P1OUT = temp;
-        cnt = (cnt + k + 8) % 8;
+    if((P2IN & 0x01) == 0){
+            Delay(10);
+            if((P2IN & 0x01) == 0){
+                while((P2IN & 0x01) == 0) ;
+                cnt = cnt + k;
+                if(cnt >= 8) cnt = 0;
+                else if(cnt < 0) cnt = 7;
+            }
+        }
+        P1OUT = (1 << cnt);
         Delay(500);
     }
 }
