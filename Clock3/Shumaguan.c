@@ -9,17 +9,17 @@ void SMG_Init(){
     P1DIR = 0xFF;
     P1OUT = 0xFF;
 
-    P3SEL = 0xFF;
-    P3SEL2 = 0xFF;
+    P3SEL = 0x00;
+    P3SEL2 = 0x00;
     P3DIR = 0xFF;
-    P3OUT = 0xFF;
+    P3OUT = 0x00;
 
     cnt_shan = 0;
 }
 
 
 void Display(unsigned short wei, unsigned short duan){
-    P3OUT = 1 << wei;
+    P3OUT = ~(1 << wei);
     P1OUT = SMG[duan];
 }
 

@@ -1,15 +1,14 @@
-#include <msp430.h> 
-#include "OLED.h"
+#include <msp430.h>
+#include "MCP4075.h"
+#include "Typedef.h"
+//#include "OLED_Font.h"
 
-void Init(void){
-    OLED_Init();
+void Init(){
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+    MCP4075_Init();
 }
-
-int main(void)
-{
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
-	Init();
-	while(1){
-	    OLED_Clear();
-	}
+int main(void) {
+    Init();
+    MCP4075_WriteData(4095);
+    while(1);
 }

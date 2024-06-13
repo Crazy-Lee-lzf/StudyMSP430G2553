@@ -1,129 +1,163 @@
 #include <msp430.h>
+#include "Typedef.h"
 
-#define Slave 0x3C
-
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+#define SDA_PIN BIT7 // P1.7
+#define SCL_PIN BIT6 //     P1.6
+#define OLED_ADDRESS 0x3C
 
 
-void OLED_W_SCL(int x){
-    if(x == 1) P1OUT |= 0x01;
-    else P1OUT &= ~0x01;
+/**
+ * @brief 写命令
+ * @param 命令
+*/
+void OLED_W_CMD(uint8_t CMD) {
+    while (UCB0CTL1 & UCTXSTP); // 等待停止条件传输完成
+        UCB0CTL1 |= UCTR + UCTXSTT; // 发送起始条件和传输模式
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送缓冲区空闲
+        UCB0TXBUF = 0x00; // 将数据写入发送缓冲区
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送缓冲区空闲
+        UCB0TXBUF = CMD; // 将数据写入发送缓冲区
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送完成
+        UCB0CTL1 |= UCTXSTP; // 发送停止条件
+
+    while (UCB0CTL1 & UCTXSTP); // 等待停止条件传输完成
 }
 
-void OLED_W_SDA(int x){
-    if(x == 1) P1OUT |= 0x02;
-    else P1OUT &= ~0x02;
-}
-// 引脚配置初始化
-void OLED_I2C_Init(void){
-    P1SEL &= ~0x03;
-    P1SEL2 &= ~0x03;
-    P1DIR |= 0x03;
-    
-    OLED_W_SCL(1);
-	OLED_W_SDA(1);
+/**
+ * @brief 写数据
+ * @param 数据
+*/
+void OLED_W_Data(uint8_t data){
+    while (UCB0CTL1 & UCTXSTP); // 等待停止条件传输完成
+        UCB0CTL1 |= UCTR + UCTXSTT; // 发送起始条件和传输模式
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送缓冲区空闲
+        UCB0TXBUF = 0x40; // 将数据写入发送缓冲区
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送缓冲区空闲
+        UCB0TXBUF = data; // 将数据写入发送缓冲区
+    while (!(IFG2 & UCB0TXIFG)); // 等待发送完成
+        UCB0CTL1 |= UCTXSTP; // 发送停止条件
+
+    while (UCB0CTL1 & UCTXSTP); // 等待停止条件传输完成
 }
 
-void OLED_I2C_Start(void){
-    OLED_W_SDA(1);
-	OLED_W_SCL(1);
-	OLED_W_SDA(0);
-	OLED_W_SCL(0);
+/**
+ * @brief 开启显示
+*/
+void OLED_DisplayOn(void){
+    OLED_W_CMD(0x8D);
+    OLED_W_CMD(0x14);
+    OLED_W_CMD(0xAF);
 }
 
-void OLED_I2C_Stop(void){
-    OLED_W_SDA(0);
-	OLED_W_SCL(1);
-	OLED_W_SDA(1);
+/**
+ * @brief 关闭显示
+*/
+void OLED_DisplayOff(void){
+    OLED_W_CMD(0x8D);
+    OLED_W_CMD(0x10);
+    OLED_W_CMD(0xAE);
 }
-
-//发送单个字节
-void OLED_I2C_SendByte(uint8_t Byte){
-    uint8_t i;
-    for(i = 0;i < 8;i++){
-        OLED_W_SDA(Byte & (0x80 >> i));
-        OLED_W_SCL(1);
-        OLED_W_SCL(0);
-    }
-    OLED_W_SCL(1);
-    OLED_W_SCL(0);
+/**
+ * @brief 设置位置
+ * @param 第几行 0 - 7
+ * @param 第几列 0 - 127
+*/
+void OLED_SetPos(uint8_t y, uint8_t x){
+    OLED_W_CMD(0xB0 | y);
+    OLED_W_CMD(((x & 0xF0) >> 4) | 0x10);
+    OLED_W_CMD((x & 0x0F) | 0x01);
 }
-
-//写命令
-void OLED_W_CMD(uint8_t CMD){
-    OLED_I2C_Start();
-    OLED_I2C_SendByte(Slave);    //从机地址
-    OLED_I2C_SendByte(0x00);    //写命令
-    OLED_I2C_SendByte(CMD);
-    OLED_I2C_Stop();
-}
-
-//写数据
-void OLED_W_Data(uint8_t Data){
-    OLED_I2C_Start();
-    OLED_I2C_SendByte(Slave);
-    OLED_I2C_SendByte(0x40);    //写数据
-    OLED_I2C_SendByte(Data);
-    OLED_I2C_Stop();
-}
-
-//设置写入的位置    Y表示行 X表示列
-void OLED_SetPos(uint8_t Y, uint8_t X){
-    OLED_W_CMD(0xB0 | Y);
-    OLED_W_CMD(0x10 | ((X & 0xF0) >> 4));   //高四位
-    OLED_W_CMD(0x00 | (X & 0x0F));          //低四位
-}
-
+/**
+  * @brief  清屏
+  */
 void OLED_Clear(void){
-    uint8_t i, j;
+    int i, j;
     for(i = 0;i < 8;i++){
         OLED_SetPos(i, 0);
         for(j = 0;j < 128;j++){
-            OLED_W_Data(0x0F);
+            OLED_W_Data(0xF0);
         }
     }
 }
 
-//OLED 初始化
-
-void OLED_Init(void)
-{
-	uint16_t i, j;
-	
-	for (i = 0; i < 1000; i++)			//上电延时
-	{
-		for (j = 0; j < 1000; j++);
-	}
-	OLED_I2C_Init();
-
-	OLED_W_CMD(0xAE);//--turn off oled panel
-    OLED_W_CMD(0x00);//---set low column address
-    OLED_W_CMD(0x10);//---set high column address
-    OLED_W_CMD(0x40);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
-    OLED_W_CMD(0x81);//--set contrast control register
-    OLED_W_CMD(0xCF);// Set SEG Output Current Brightness
-    OLED_W_CMD(0xA1);////--Set SEG/Column Mapping     0xa0左右反置 0xa1正常
-    OLED_W_CMD(0xC8);//Set COM/Row Scan Direction   0xc0上下反置 0xc8正常
-    OLED_W_CMD(0xA6);//--set normal display
-    OLED_W_CMD(0xA8);//--set multiplex ratio(1 to 64)
-    OLED_W_CMD(0x3f);//--1/64 duty
-    OLED_W_CMD(0xD3);//-set display offset   Shift Mapping RAM Counter (0x00~0x3F)
-    OLED_W_CMD(0x00);//-not offset
-    OLED_W_CMD(0xd5);//--set display clock divide ratio/oscillator frequency
-    OLED_W_CMD(0x80);//--set divide ratio, Set Clock as 100 Frames/Sec
-    OLED_W_CMD(0xD9);//--set pre-charge period
-    OLED_W_CMD(0xF1);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
-    OLED_W_CMD(0xDA);//--set com pins hardware configuration
-    OLED_W_CMD(0x12);
-    OLED_W_CMD(0xDB);//--set vcomh
-    OLED_W_CMD(0x30);//Set VCOM Deselect Level
-    OLED_W_CMD(0x20);//-Set Page Addressing Mode (0x00/0x01/0x02)
-    OLED_W_CMD(0x02);//
-    OLED_W_CMD(0x8D);//--set Charge Pump enable/disable
-    OLED_W_CMD(0x14);//--set(0x10) disable
-    OLED_Clear();
-    OLED_W_CMD(0xAF);
+/**
+  * @brief  显示单个字符
+  * @param  行
+  * @param  列
+  * @param  字符数组
+  * @param  是否反显
+  */
+void OLED_Show_Char(uint8_t x, uint8_t y, uint8_t *s, uint8_t fan){
+    uint8_t i;
+    OLED_SetPos((x - 1) * 2, (y - 1) * 16);
+    for(i = 0;i < 16;i++){
+        if(fan) OLED_W_Data(~(*s));
+        else OLED_W_Data(*s);
+        s++;
+    }
+    OLED_SetPos((x - 1) * 2 + 1, (y - 1) * 16);
+    for(i = 16; i < 32;i++){
+        if(fan) OLED_W_Data(~(*s));
+        else OLED_W_Data(*s);
+        s++;
+    }
 }
+
+/*
+ * @brief 初始化
+*/
+void OLED_Init(void) {
+    P1SEL |= SDA_PIN + SCL_PIN; // 将P1.6和P1.7设置为I2C功能
+    P1SEL2|= SDA_PIN + SCL_PIN;
+
+    UCB0CTL1 |= UCSWRST; // 进入软件复位状态
+    UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC; // 主模式，I2C模式，同步模式
+    UCB0CTL1 = UCSSEL_2 + UCSWRST; // 使用SMCLK
+    UCB0BR0 = 12; // 设置波特率（根据实际情况调整）
+    UCB0BR1 = 0;
+    UCB0I2CSA = OLED_ADDRESS; // 设置从设备地址
+    UCB0CTL1 &= ~UCSWRST; // 退出软件复位状态
+
+    OLED_W_CMD(0xAE);    //关闭显示
+
+    OLED_W_CMD(0xD5);    //设置显示时钟分频比/振荡器频率
+    OLED_W_CMD(0x80);
+
+    OLED_W_CMD(0xA8);    //设置多路复用率
+    OLED_W_CMD(0x3F);
+
+    OLED_W_CMD(0xD3);    //设置显示偏移
+    OLED_W_CMD(0x00);
+
+    OLED_W_CMD(0x40);    //设置显示开始行
+
+    OLED_W_CMD(0xDA);    //设置COM引脚硬件配置
+    OLED_W_CMD(0x12);
+
+    OLED_W_CMD(0x81);    //设置对比度控制
+    OLED_W_CMD(0xCF);
+
+    OLED_W_CMD(0xD9);    //设置预充电周期
+    OLED_W_CMD(0xF1);
+
+    OLED_W_CMD(0xDB);    //设置VCOMH取消选择级别
+    OLED_W_CMD(0x30);
+
+    OLED_W_CMD(0xA4);    //设置整个显示打开/关闭
+
+    OLED_W_CMD(0xA6);    //设置正常/倒转显示
+
+    OLED_W_CMD(0x8D);    //设置充电泵
+    OLED_W_CMD(0x14);
+
+    OLED_W_CMD(0xAF);    //开启显示
+
+    OLED_W_CMD(0xA1);    //设置左右方向，0xA1正常 0xA0左右反置
+    OLED_W_CMD(0xC8);    //设置上下方向，0xC8正常 0xC0上下反置
+
+    OLED_Clear();
+}
+
+
+
 

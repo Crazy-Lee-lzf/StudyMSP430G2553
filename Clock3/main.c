@@ -4,9 +4,11 @@
 #include "Delay.h"
 
 
-unsigned int time[6]={2024,4,11,16,36,0};
+unsigned int time[6]={2024,6,13,8,0,0};
 unsigned int Month[13]={0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-unsigned short alarm_time[2]={7,30};
+unsigned short alarm_time1[2]={7,30};
+unsigned short alarm_time2[2]={8,30};
+unsigned short alarm_time3[2]={8,00};
 unsigned short limit[6]={10000,12,31,24,60,60};
 unsigned short time_flag = 1;
 unsigned short show_flag = 1;
@@ -33,19 +35,30 @@ void Init(){
 }
 
 int main(void)
+
 {
     Init();
     while(1){
         unsigned short temp_data[8] = {time[0]/10%10, time[0]%10, 16, time[1]/10, time[1]%10, 16, time[2]/10, time[2]%10};
         unsigned short temp_time[8] = {time[3]/10, time[3]%10, 16, time[4]/10, time[4]%10, 16, time[5]/10, time[5]%10};
-        unsigned short temp_alarm[8] = {10, 12, 16, alarm_time[0]/10, alarm_time[0]%10, 16,alarm_time[1]/10,alarm_time[1]%10};
+        unsigned short temp_alarm1[8] = {10, 1, 16, alarm_time1[0]/10, alarm_time1[0]%10, 16,alarm_time1[1]/10,alarm_time1[1]%10};
+        unsigned short temp_alarm2[8] = {10, 2, 16, alarm_time2[0]/10, alarm_time2[0]%10, 16,alarm_time2[1]/10,alarm_time2[1]%10};
+        unsigned short temp_alarm3[8] = {10, 3, 16, alarm_time3[0]/10, alarm_time3[0]%10, 16,alarm_time3[1]/10,alarm_time3[1]%10};
         unsigned short *ptemp;
         unsigned shan = 0;
         if(edit_flag > 0) shan = 0x03 << (edit_flag*3  - 3);
         if(show_flag == 0)  ptemp = temp_data;
         else if(show_flag == 1) ptemp = temp_time;
         else if(show_flag == 2){
-            ptemp = temp_alarm;
+            ptemp = temp_alarm1;
+            shan =shan << 3;
+        }
+        else if(show_flag == 3){
+            ptemp = temp_alarm2;
+            shan =shan << 3;
+        }
+        else if(show_flag == 4){
+            ptemp = temp_alarm3;
             shan =shan << 3;
         }
         ShowTime(ptemp, shan);
@@ -59,7 +72,9 @@ __interrupt void Timer0_Isr(void){
     limit[2] = Month[time[1]];
     time_flag ++;
     if(time_flag == 100){
-        if(time[3] == alarm_time[0] && time[4] == alarm_time[1])    P2OUT |= 0x80;
+        if(time[3] == alarm_time1[0] && time[4] == alarm_time1[1])    P2OUT |= 0x80;
+        else if(time[3] == alarm_time2[0] && time[4] == alarm_time2[1])    P2OUT |= 0x80;
+        else if(time[3] == alarm_time3[0] && time[4] == alarm_time3[1])    P2OUT |= 0x80;
         else P2OUT &= ~0x80;
         time[5]++;
         time_flag = 0;
@@ -92,7 +107,7 @@ __interrupt void PORT2_ISR(void){
         Delay_ms(10);
         if(!(P2IN & 0x01)){
             show_flag ++;
-            if(show_flag > 2) show_flag = 0;
+            if(show_flag > 4) show_flag = 0;
             edit_flag = 0;
         }
         P2IFG &= ~0x01;
@@ -101,8 +116,8 @@ __interrupt void PORT2_ISR(void){
         Delay_ms(10);
         if(!(P2IN & 0x02)){
             edit_flag ++;
-            if(show_flag != 2 && edit_flag > 3) edit_flag = 0;
-            else if(show_flag == 2 && edit_flag > 2) edit_flag = 0;
+            if(show_flag < 2 && edit_flag > 3) edit_flag = 0;
+            else if(show_flag >= 2 && edit_flag > 2) edit_flag = 0;
         }
         P2IFG &= ~0x02;
     }
@@ -119,8 +134,16 @@ __interrupt void PORT2_ISR(void){
                     if(time[edit_flag - 1 + 3] >= limit[edit_flag - 1 + 3]) time[edit_flag - 1 + 3] = 0;
                 }
                 else if(show_flag == 2){
-                    alarm_time[edit_flag - 1] ++;
-                    if(alarm_time[edit_flag - 1] >= limit[edit_flag - 1 + 3]) alarm_time[edit_flag - 1] = 0;
+                    alarm_time1[edit_flag - 1] ++;
+                    if(alarm_time1[edit_flag - 1] >= limit[edit_flag - 1 + 3]) alarm_time1[edit_flag - 1] = 0;
+                }
+                else if(show_flag == 3){
+                    alarm_time2[edit_flag - 1] ++;
+                    if(alarm_time2[edit_flag - 1] >= limit[edit_flag - 1 + 3]) alarm_time2[edit_flag - 1] = 0;
+                }
+                else if(show_flag == 4){
+                    alarm_time3[edit_flag - 1] ++;
+                    if(alarm_time3[edit_flag - 1] >= limit[edit_flag - 1 + 3]) alarm_time3[edit_flag - 1] = 0;
                 }
             }
         }
@@ -140,8 +163,16 @@ __interrupt void PORT2_ISR(void){
                         time[edit_flag - 1 + 3] --;
                     }
                     else if(show_flag == 2){
-                        if(alarm_time[edit_flag - 1] == 0) alarm_time[edit_flag - 1] = limit[edit_flag -1 + 3];
-                        alarm_time[edit_flag - 1] --;
+                        if(alarm_time1[edit_flag - 1] == 0) alarm_time1[edit_flag - 1] = limit[edit_flag -1 + 3];
+                        alarm_time1[edit_flag - 1] --;
+                    }
+                    else if(show_flag == 3){
+                        if(alarm_time2[edit_flag - 1] == 0) alarm_time2[edit_flag - 1] = limit[edit_flag -1 + 3];
+                        alarm_time2[edit_flag - 1] --;
+                    }
+                    else if(show_flag == 4){
+                        if(alarm_time2[edit_flag - 1] == 0) alarm_time2[edit_flag - 1] = limit[edit_flag -1 + 3];
+                        alarm_time2[edit_flag - 1] --;
                     }
                 }
             }
